@@ -5,40 +5,40 @@ CHIP P2S {
     PARTS:
     // 4位寄存器实现（每个bit使用Mux+DFF手动控制load）
     // Bit 0
-    Mux(a=d0, b=indata[0], sel=load, out=mux0_out);
-    DFF(in=mux0_out, out=d0);
+    Mux(a=d0,b=indata[0],sel=load,out=mux0_out);
+    DFF(in=mux0_out,out=d0);
     // Bit 1
-    Mux(a=d1, b=indata[1], sel=load, out=mux1_out);
-    DFF(in=mux1_out, out=d1);
+    Mux(a=d1,b=indata[1],sel=load,out=mux1_out);
+    DFF(in=mux1_out,out=d1);
     // Bit 2
-    Mux(a=d2, b=indata[2], sel=load, out=mux2_out);
-    DFF(in=mux2_out, out=d2);
+    Mux(a=d2,b=indata[2],sel=load,out=mux2_out);
+    DFF(in=mux2_out,out=d2);
     // Bit 3
-    Mux(a=d3, b=indata[3], sel=load, out=mux3_out);
-    DFF(in=mux3_out, out=d3);
+    Mux(a=d3,b=indata[3],sel=load,out=mux3_out);
+    DFF(in=mux3_out,out=d3);
 
     // 其他逻辑保持不变...
 
 
     // 2位计数器（0-3）
-    Inc16(in=count, out=count_inc);
-    Mux16(a=count, b=count_inc, sel=count_enable, out=next_count);
-    Register(in=next_count, load=1, out=count);  // 持续更新计数器
+    Inc16(in=count,out=count_inc);
+    Mux16(a=count,b=count_inc,sel=count_enable,out=next_count);
+    Register(in=next_count,load=1,out=count);  // 持续更新计数器
     // 计数器使能逻辑：仅在enable=1且未完成时递增
-    And(a=enable, b=complete_n, out=count_enable);
-    Not(in=complete, out=complete_n);
+    And(a=enable,b=complete_n,out=count_enable);
+    Not(in=complete,out=complete_n);
 
     // 多路选择器：根据计数器值选择输出位
     Mux4Way16(
-        a[0]=d0, a[1..15]=false,  // 第0位
-        b[0]=d1, b[1..15]=false,  // 第1位
-        c[0]=d2, c[1..15]=false,  // 第2位
-        d[0]=d3, d[1..15]=false,  // 第3位
+        a[0]=d0,a[1..15]=false,  // 第0位
+        b[0]=d1,b[1..15]=false,  // 第1位
+        c[0]=d2,c[1..15]=false,  // 第2位
+        d[0]=d3,d[1..15]=false,  // 第3位
         sel=count[0..1],           // 低2位作为选择信号
         out=selected_bit
     );
-    Or16(a=selected_bit, b=false, out[0]=sout);  // 提取最低位
+    Or16(a=selected_bit,b=false,out[0]=sout);  // 提取最低位
 
     // 完成信号：当计数器达到3（0b11）时置位
-    And(a=count[0], b=count[1], out=complete);
+    And(a=count[0],b=count[1],out=complete);
 }
