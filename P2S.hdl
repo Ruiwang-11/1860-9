@@ -3,8 +3,11 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // 4-bit 数据寄存器
-    Register(in=indata, load=load, clk=true, out=data_out);
+    // 扩展 indata 为 16 位
+    Mux16(a=false, b=indata, sel=false, out=indata_extended);
+
+    // 16-bit 数据寄存器
+    Register(in=indata_extended, load=load, clk=true, out=data_out);
 
     // 2-bit 计数器
     Register(in=counter_next, load=reset, clk=true, out=counter_out);
