@@ -3,22 +3,22 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // 扩展 indata 为 16 位
-    Mux16(a=false, b=indata, sel=false, out=indata_extended);
+    // 手动扩展 indata 到 16 位
+    Mux16(a=false, b[0..11]=false, b[12..15]=indata, sel=true, out=indata_extended);
 
     // 16-bit 数据寄存器
     Register(in=indata_extended, load=load, clk=true, out=data_out);
 
     // 2-bit 计数器
-    Register(in=counter_next, load=reset, clk=true, out=counter_out);
-    
+    Register(in=counter_next, load=load, clk=true, out=counter_out);
+
     // 计算下一个计数值
-    Add16(a=counter_out, b[0..15]=false, b[0]=true, out=counter_next);
+    Add16(a=counter_out, b=false, b[0]=true, out=counter_next);
 
     // 选择对应位输出
-    Mux4Way16(a=data_out[0], b=data_out[1], c=data_out[2], d=data_out[3], 
+    Mux4Way16(a=data_out[12], b=data_out[13], c=data_out[14], d=data_out[15], 
               sel=counter_out[0..1], out=sout);
 
     // 计算是否完成
-    Eq(a=counter_out, b[0..15]=false, b[0..1]=true, out=complete);
+    Eq(a=counter_out, b=false, b[0..1]=true, out=complete);
 }
