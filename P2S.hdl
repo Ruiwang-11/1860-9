@@ -3,28 +3,25 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // 4-bit register to store input data when load is asserted
-    Register(in=indata, load=load, out=stored_data);
+    // 使用4位寄存器存储输入数据
+    Register4(in=indata, load=load, out=stored_data);
 
-    // Shift register logic (right shift)
-    Mux4Way16(
-        a=stored_data,
-        b=stored_data >> 1,
-        c=stored_data >> 2,
-        d=stored_data >> 3,
+    // 移位逻辑（右移）
+    ShiftRight4(in=stored_data, out=shifted_data);
+
+    // 2位计数器跟踪已移位的比特数（0到3）
+    Counter2(in=enable, reset=load, out=count);
+
+    // 输出逻辑：根据计数器选择当前比特
+    Mux4Way(
+        a=stored_data[0],
+        b=stored_data[1],
+        c=stored_data[2],
+        d=stored_data[3],
         sel=count,
-        out=shifted_data
+        out=sout
     );
 
-    // 2-bit counter to track shifted bits (0 to 3)
-    Inc16(in=count, out=count_inc);
-    Mux16(a=count, b=count_inc, sel=enable, out=next_count);
-    Register(in=next_count, load=enable, out=count);
-
-    // Output logic
-    And(a=enable, b=stored_data[0], out=sout_mux);
-    Mux(a=sout_mux, b=0, sel=complete, out=sout);
-
-    // Complete signal logic (assert when count == 3)
-    Eq16(a=count, b=3, out=complete);
+    // 完成信号逻辑（当计数器等于3时置位）
+    Eq2(a=count, b=3, out=complete);
 }
