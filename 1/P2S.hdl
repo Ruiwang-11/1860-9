@@ -1,0 +1,30 @@
+CHIP P2S {
+    IN indata[4], enable, load;
+    OUT sout, complete;
+
+    PARTS:
+    // 4-bit register to store input data when load is asserted
+    Register(in=indata, load=load, out=stored_data);
+
+    // Shift register logic (right shift)
+    Mux4Way16(
+        a=stored_data,
+        b=stored_data >> 1,
+        c=stored_data >> 2,
+        d=stored_data >> 3,
+        sel=count,
+        out=shifted_data
+    );
+
+    // 2-bit counter to track shifted bits (0 to 3)
+    Inc16(in=count, out=count_inc);
+    Mux16(a=count, b=count_inc, sel=enable, out=next_count);
+    Register(in=next_count, load=enable, out=count);
+
+    // Output logic
+    And(a=enable, b=stored_data[0], out=sout_mux);
+    Mux(a=sout_mux, b=0, sel=complete, out=sout);
+
+    // Complete signal logic (assert when count == 3)
+    Eq16(a=count, b=3, out=complete);
+}
