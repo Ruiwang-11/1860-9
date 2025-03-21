@@ -3,29 +3,39 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // 使用4个1位寄存器组成4位寄存器组
-    DFF(in=indata[0], load=load, out=reg0);
-    DFF(in=indata[1], load=load, out=reg1);
-    DFF(in=indata[2], load=load, out=reg2);
-    DFF(in=indata[3], load=load, out=reg3);
+    // 4位寄存器实现（每个bit使用Mux+DFF手动控制load）
+    // Bit 0
+    Mux(a=d0, b=indata[0], sel=load, out=mux0_out);
+    DFF(in=mux0_out, out=d0);
+    // Bit 1
+    Mux(a=d1, b=indata[1], sel=load, out=mux1_out);
+    DFF(in=mux1_out, out=d1);
+    // Bit 2
+    Mux(a=d2, b=indata[2], sel=load, out=mux2_out);
+    DFF(in=mux2_out, out=d2);
+    // Bit 3
+    Mux(a=d3, b=indata[3], sel=load, out=mux3_out);
+    DFF(in=mux3_out, out=d3);
 
-    // 组合当前存储的4位数据
-    Or4Way(a=reg0, b=reg1, c=reg2, d=reg3, out[0]=stored0, out[1]=stored1, out[2]=stored2, out[3]=stored3);
-
-    // 2位计数器（使用内置16位计数器并截取低2位）
+    // 2位计数器（0-3）
     Inc16(in=count, out=count_inc);
-    Mux16(a=count, b=count_inc, sel=enable, out=next_count);
-    Register(in=next_count, load=enable, out=count);
-    // 提取低2位作为实际计数值（0-3）
-    Splitter(in=count, out[0]=cnt0, out[1]=cnt1);
-    Or(a=cnt0, b=cnt1, out=count_valid);
+    Mux16(a=count, b=count_inc, sel=count_enable, out=next_count);
+    Register(in=next_count, load=1, out=count);  // 持续更新计数器
+    // 计数器使能逻辑：仅在enable=1且未完成时递增
+    And(a=enable, b=complete_n, out=count_enable);
+    Not(in=complete, out=complete_n);
 
-    // 多路选择器选择当前输出位（手动实现4选1逻辑）
-    Mux(a=stored0, b=stored1, sel=cnt0, out=mux1_out);
-    Mux(a=stored2, b=stored3, sel=cnt0, out=mux2_out);
-    Mux(a=mux1_out, b=mux2_out, sel=cnt1, out=sout);
+    // 多路选择器：根据计数器值选择输出位
+    Mux4Way16(
+        a[0]=d0, a[1..15]=false,  // 第0位
+        b[0]=d1, b[1..15]=false,  // 第1位
+        c[0]=d2, c[1..15]=false,  // 第2位
+        d[0]=d3, d[1..15]=false,  // 第3位
+        sel=count[0..1],           // 低2位作为选择信号
+        out=selected_bit
+    );
+    Or16(a=selected_bit, b=false, out[0]=sout);  // 提取最低位
 
-    // 完成信号逻辑（当计数器达到3时置位）
-    And(a=cnt0, b=cnt1, out=complete_temp);
-    And(a=complete_temp, b=enable, out=complete);
+    // 完成信号：当计数器达到3（0b11）时置位
+    And(a=count[0], b=count[1], out=complete);
 }
