@@ -5,7 +5,7 @@ CHIP P2S {
     PARTS:
     // 4位寄存器实现（每个bit使用Mux+DFF手动控制load）
     // Bit 0
-    Mux(a=d0,b=indata[0],sel=load,out=mux0_out);
+    Mux(a=d0,b=indata[0},sel=load,out=mux0_out);
     DFF(in=mux0_out,out=d0);
     // Bit 1
     Mux(a=d1,b=indata[1],sel=load,out=mux1_out);
